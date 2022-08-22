@@ -1,0 +1,23 @@
+{
+  "name": "chat_publico_back",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Greenborn/chat_publico_back.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Greenborn/chat_publico_back/issues"
+  },
+  "homepage": "https://github.com/Greenborn/chat_publico_back#readme",
+  "dependencies": {
+    "express": "^4.18.1",
+    "express-ws": "^5.0.2"
+  }
+}
