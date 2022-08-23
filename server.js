@@ -5,6 +5,7 @@ let uuid = require("uuid")
 require("dotenv").config()
 
 let registro_clientes = []
+let reporte_conectados = []
 
 expressWs.getWss().on('connection', function(ws) {
   ws['id_conexion'] = uuid.v4()
@@ -51,6 +52,7 @@ app.ws('/', function(ws, req) {
             }
             
             registro_clientes.push( registro )
+            reporte_conectados.push( registro.nombre )
     
             console.log('se registro nuevo usuario', registro)
             ws.send(JSON.stringify(registro))
@@ -109,6 +111,7 @@ app.ws('/', function(ws, req) {
       if (registro_clientes[c].id_conexion == this.id_conexion){
         nombre = registro_clientes[c].nombre
         registro_clientes.splice(c,1)
+        reporte_conectados.splice(c,1)
         break;
       }
     }
@@ -126,6 +129,16 @@ app.ws('/', function(ws, req) {
   })
 
 });
+
+setInterval(()=>{
+  let clientes = expressWs.getWss().clients
+  clientes.forEach(cliente => {
+    cliente.send(JSON.stringify({
+      accion: 'reporte_online',
+      reporte: reporte_conectados
+    }))
+  })
+}, 500)
 
 app.listen(process.env.PUERTO);
 console.log('puerto', process.env.PUERTO)
