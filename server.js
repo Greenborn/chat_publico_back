@@ -7,6 +7,14 @@ require("dotenv").config()
 let registro_clientes = []
 let reporte_conectados = []
 
+function envio_general(msg){
+  let clientes = expressWs.getWss().clients
+    
+  clientes.forEach(cliente => {
+    cliente.send(JSON.stringify( msg ))
+  })
+}
+
 expressWs.getWss().on('connection', function(ws) {
   ws['id_conexion'] = uuid.v4()
 });
@@ -57,14 +65,9 @@ app.ws('/', function(ws, req) {
             console.log('se registro nuevo usuario', registro)
             ws.send(JSON.stringify(registro))
 
-            let clientes = expressWs.getWss().clients
-    
-            clientes.forEach(cliente => {
-              cliente.send(JSON.stringify({
-                accion: 'mensaje_sys',
-                msg: registro.nombre + ' Se ha unido a la sala'
-              }))
-            })
+            envio_general({
+                accion: 'mensaje_sys', msg: registro.nombre + ' Se ha unido a la sala'
+              })
           break;
           case 'mensaje':
             //comprobamos que el mensaje provenga de un cliente registrado
@@ -85,11 +88,7 @@ app.ws('/', function(ws, req) {
                 break;
               }
 
-              let clientes = expressWs.getWss().clients
-    
-              clientes.forEach(cliente => {
-                cliente.send(JSON.stringify(msgJson))
-              })
+              envio_general(msgJson)
             }
             
           break;
@@ -117,13 +116,7 @@ app.ws('/', function(ws, req) {
     }
 
     if (nombre != ''){
-      let clientes = expressWs.getWss().clients
-      clientes.forEach(cliente => {
-        cliente.send(JSON.stringify({
-          accion: 'mensaje_sys',
-          msg: nombre+' ha abandonado la sala'
-        }))
-      })
+      envio_general({ accion: 'mensaje_sys', msg: nombre+' ha abandonado la sala' })
     }
     
   })
@@ -131,13 +124,7 @@ app.ws('/', function(ws, req) {
 });
 
 setInterval(()=>{
-  let clientes = expressWs.getWss().clients
-  clientes.forEach(cliente => {
-    cliente.send(JSON.stringify({
-      accion: 'reporte_online',
-      reporte: reporte_conectados
-    }))
-  })
+  envio_general( { accion: 'reporte_online', reporte: reporte_conectados })
 }, 500)
 
 app.listen(process.env.PUERTO);
