@@ -6,10 +6,7 @@ let expressWs = require('express-ws')(app);
 const uuid = require("uuid")
 require("dotenv").config()
 
-let salas_chat = []
-
 let sala_general = new SalaChat({ iniciador: null })
-salas_chat.push(sala_general)
 
 expressWs.getWss().on('connection', function(ws) {
   ws['id_conexion'] = uuid.v4()
@@ -28,7 +25,7 @@ app.ws('/', function(ws, req) {
         
         switch(msgJson.accion){
           case 'registro_sala_privada':
-            
+            sala_general.abrirSubSala( msgJson, ws )
           break;
           
           case 'registro':
@@ -37,6 +34,14 @@ app.ws('/', function(ws, req) {
 
           case 'mensaje':
             sala_general.enviarMensaje( msgJson, ws )
+          break;
+
+          case 'cerrar_chat':
+            sala_general.cerrarChat( msgJson, ws )
+          break;
+
+          case 'mensaje_privado':
+            sala_general.envioMensajePrivado( msgJson, ws )
           break;
         }
         

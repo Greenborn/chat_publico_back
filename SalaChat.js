@@ -5,6 +5,7 @@ module.exports = class SalaChat {
   id        = null
   usuarios  = []
   reporte_conectados = []
+  sub_salas = {}
   titulo    = ''
   iniciador = null
 
@@ -17,6 +18,48 @@ module.exports = class SalaChat {
     setInterval( ()=>{ this.tareasCron() }, 500)
   }
 
+  abrirSubSala( msgJson, ws ){
+    let iniciador = this.buscarUsuario( msgJson.nombre_origen )
+    let destino   = this.buscarUsuario( msgJson.nombre_destino )
+    if (iniciador === null || destino === null)
+      return false;
+    
+    let sub_sala = new SalaChat({ iniciador: iniciador })
+    console.log('nueva subsala creada')
+
+    sub_sala.agregarUsuario(iniciador)
+    sub_sala.agregarUsuario(destino)
+
+    let notif = JSON.stringify({ accion: 'registro_sala_privada', 'id_nueva_sala': sub_sala.id, 'iniciador': msgJson.nombre_origen, 'destino': msgJson.nombre_destino })
+    ws.send(notif)
+    destino.conexion.send(notif)
+
+    sub_sala.envioGeneral({
+      accion: 'mensaje_sys', msg: 'Nueva conversación privada iniciada por ' + msgJson.nombre_origen
+    })
+
+    this.sub_salas[sub_sala.id] = sub_sala
+  }
+
+  cerrarChat( msgJson, ws ){
+    if (!this.sub_salas.hasOwnProperty(msgJson.id_sala))
+      return false
+    
+    let sub_sala = this.sub_salas[msgJson.id_sala]
+    let usuario = sub_sala.buscarUsuario(msgJson.usuario.nombre)
+
+    if (usuario === null){
+      console.log('usuario no presente en subsala')
+      return false
+    }
+      
+    sub_sala.envioGeneral({
+      accion: 'mensaje_sys', msg: msgJson.usuario.nombre + ' desidió terminar la conversación '
+    })
+
+    delete this.sub_salas[msgJson.id_sala]
+  }
+
   agregarUsuario( user ){
     //comprobamos que no haya alguien registrado con el mismo nombre
     if (this.buscarUsuario(user.nombre) !== null)
@@ -24,7 +67,7 @@ module.exports = class SalaChat {
 
     this.usuarios.push( user )
     this.reporte_conectados.push( user.nombre )
-    console.log('se registro nuevo usuario: ', user)
+    console.log('se registro nuevo usuario: ', user.nombre)
     return true
   }
 
@@ -50,6 +93,7 @@ module.exports = class SalaChat {
       id: uuid.v4(),
       nombre: msgJson.nombre,
       accion: 'registro',
+      id_sala: this.id,
       id_conexion: this.id_conexion
     }
 
@@ -59,6 +103,14 @@ module.exports = class SalaChat {
     this.envioGeneral({
       accion: 'mensaje_sys', msg: registro.nombre + ' Se ha unido a la sala'
     })
+  }
+
+  envioMensajePrivado( msgJson, ws ){
+    //buscamos la subsala a la cual va dirigido
+    if (!this.sub_salas.hasOwnProperty(msgJson.id_sala))
+      return false
+
+    this.sub_salas[msgJson.id_sala].enviarMensaje( msgJson, ws )
   }
 
   enviarMensaje( msgJson, ws ){
@@ -77,6 +129,7 @@ module.exports = class SalaChat {
   }
 
   envioGeneral( msg ){
+    msg['id_sala'] = this.id
     for (let c=0; c < this.usuarios.length; c++){
       this.usuarios[c].conexion.send(JSON.stringify( msg ))
     }
