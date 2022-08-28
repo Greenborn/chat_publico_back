@@ -10,4 +10,8 @@ module.exports = class UsuarioChat {
     this.nombre = params.nombre
     this.id = uuid.v4()
   }
+
+  enviarMesaje( msg ){
+    this.conexion.send(JSON.stringify( msg ))
+  }
 }

@@ -30,9 +30,9 @@ module.exports = class SalaChat {
     sub_sala.agregarUsuario(iniciador)
     sub_sala.agregarUsuario(destino)
 
-    let notif = JSON.stringify({ accion: 'registro_sala_privada', 'id_nueva_sala': sub_sala.id, 'iniciador': msgJson.nombre_origen, 'destino': msgJson.nombre_destino })
-    ws.send(notif)
-    destino.conexion.send(notif)
+    let notif = { accion: 'registro_sala_privada', 'id_nueva_sala': sub_sala.id, 'iniciador': msgJson.nombre_origen, 'destino': msgJson.nombre_destino }
+    iniciador.enviarMesaje(notif)
+    destino.enviarMesaje(notif)
 
     sub_sala.envioGeneral({
       accion: 'mensaje_sys', msg: 'Nueva conversación privada iniciada por ' + msgJson.nombre_origen
@@ -67,7 +67,7 @@ module.exports = class SalaChat {
 
     this.usuarios.push( user )
     this.reporte_conectados.push( user.nombre )
-    console.log('se registro nuevo usuario: ', user.nombre)
+    console.log('se registro nuevo usuario en la sala: ', user.nombre)
     return true
   }
 
@@ -99,7 +99,7 @@ module.exports = class SalaChat {
 
     this.atiendeOnClose(ws)
 
-    ws.send(JSON.stringify(registro))
+    usuario.enviarMesaje(registro)
     this.envioGeneral({
       accion: 'mensaje_sys', msg: registro.nombre + ' Se ha unido a la sala'
     })
@@ -131,7 +131,7 @@ module.exports = class SalaChat {
   envioGeneral( msg ){
     msg['id_sala'] = this.id
     for (let c=0; c < this.usuarios.length; c++){
-      this.usuarios[c].conexion.send(JSON.stringify( msg ))
+      this.usuarios[c].enviarMesaje( msg )
     }
   }
 
